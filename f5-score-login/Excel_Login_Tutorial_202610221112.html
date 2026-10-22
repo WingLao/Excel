@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Excel 成績登入表格</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=Noto+Sans+HK:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --forest:#16302A; --forest-2:#1F3F36; --card:#FFFFFF; --ink:#141414;
+  --excel:#217346; --cell:#C6E0B4; --crest:#C8102E; --mist:#A9BDB4;
+  --font:"Figtree","Noto Sans HK","PingFang HK","Microsoft JhengHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--forest);color:#fff;font-family:var(--font);overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible{outline:3px solid var(--cell);outline-offset:2px}
+
+/* 16:9 stage that fits the window */
+.stage{position:absolute;inset:0;margin:auto;width:min(100vw,177.78vh);height:min(56.25vw,100vh);
+  container-type:size;overflow:hidden;background:var(--forest)}
+
+/* ---------- Opening: the finished form itself ---------- */
+.intro{position:absolute;inset:0;background:url("assets/forest_202610211512.jpg") center/cover;display:grid;place-items:center}
+.intro::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,25,20,.15),rgba(10,25,20,.55))}
+.form{position:relative;z-index:1;width:26cqw;background:var(--card);color:var(--ink);padding:3.2cqh 2.6cqw 3.6cqh;
+  display:grid;justify-items:center;gap:1.4cqh;box-shadow:0 2cqh 6cqh rgba(0,0,0,.35)}
+.form img{width:7.5cqw;image-rendering:auto}
+.form h1{font-size:2.6cqh;font-weight:800;letter-spacing:-.01em;text-align:center;line-height:1.25}
+.form h1 small{display:block;font-size:1.7cqh;font-weight:500;color:#555;margin-top:.4cqh}
+.fields{display:grid;grid-template-columns:auto 9cqw;gap:.9cqh .8cqw;align-items:center;margin:1cqh 0 1.2cqh;font-size:1.55cqh;color:#333}
+.fields span:nth-child(odd){text-align:right}
+.fields span:nth-child(even){background:var(--cell);height:2.3cqh;display:flex;align-items:center;padding:0 .6cqw;font-size:1.4cqh;color:#2c4a1f}
+.pill{background:var(--ink);color:#fff;border-radius:99px;padding:1.2cqh 2.6cqw;font-weight:600;font-size:1.8cqh;transition:transform .15s}
+.pill:hover{transform:translateY(-1px)}
+.langpick{display:flex;gap:.4cqw;font-size:1.5cqh;color:#555}
+.langpick button{padding:.4cqh .8cqw;border-radius:99px;border:1px solid #ccc;color:#333}
+.langpick button[aria-pressed="true"]{background:var(--excel);border-color:var(--excel);color:#fff}
+
+/* ---------- Lesson ---------- */
+.lesson{position:absolute;inset:0;display:none;grid-template-rows:auto auto minmax(0,1fr) auto;padding:2.2cqh 2.4cqw 2.4cqh;gap:1.4cqh;
+  background:radial-gradient(120% 90% at 30% 20%,var(--forest-2),var(--forest))}
+.lesson.on{display:grid}
+.progress{display:grid;grid-template-columns:repeat(16,1fr);gap:.35cqw}
+.progress i{display:block;height:.75cqh;padding:.8cqh 0;margin:-.8cqh 0;background-clip:content-box;border-radius:2px;background-color:rgba(255,255,255,.2);cursor:pointer}
+.progress i:hover{background-color:rgba(255,255,255,.45)}
+.progress i.past{background:#3FA36B}
+.progress i.cur{background:var(--cell);box-shadow:0 0 0 2px rgba(198,224,180,.35)}
+.topbar{display:flex;align-items:center;gap:1.4cqw}
+.stepno{font-weight:800;font-size:4.4cqh;color:var(--cell);font-variant-numeric:tabular-nums;line-height:1}
+.stepno small{font-size:1.8cqh;color:var(--mist);font-weight:600}
+.title{font-size:3.1cqh;font-weight:700;letter-spacing:-.01em;flex:1}
+.tools{display:flex;align-items:center;gap:.8cqw;font-size:1.45cqh;color:var(--mist)}
+.tools button{padding:.6cqh .8cqw;border-radius:6px;border:1px solid rgba(255,255,255,.18)}
+.tools button[aria-pressed="true"]{background:rgba(198,224,180,.18);border-color:var(--cell);color:#fff}
+.tools input[type=range]{width:7cqw;accent-color:var(--cell)}
+.tools select{font:inherit;color:#fff;background:rgba(255,255,255,.08);padding:.6cqh .6cqw;border-radius:6px;border:1px solid rgba(255,255,255,.18);max-width:16cqw;cursor:pointer}
+.tools select option{color:#000}
+.screen{position:relative;min-height:0;height:100%;display:grid;grid-template-columns:minmax(0,1fr) 21cqw;gap:1.2cqw;align-items:center}
+.vwrap{position:relative;height:100%;max-width:100%;aspect-ratio:16/9;justify-self:center;overflow:hidden;background:#000;border-radius:6px;box-shadow:0 1.5cqh 4cqh rgba(0,0,0,.4);cursor:zoom-in}
+.vwrap.zoom{cursor:zoom-out}
+.screen video{display:block;width:100%;height:100%;object-fit:contain;transition:transform .3s ease}
+.vwrap.zoom video{transform:scale(2.2)}
+.loading{position:absolute;inset:0;display:none;place-items:center;font-size:2.4cqh;font-weight:600;background:rgba(0,0,0,.45);pointer-events:none}
+.vwrap.busy .loading{display:grid}
+.zoomhint{position:absolute;top:1cqh;left:1cqh;font-size:1.3cqh;background:rgba(0,0,0,.6);padding:.3cqh .6cqw;border-radius:4px;pointer-events:none}
+.enui{position:absolute;top:.8cqh;right:1cqh;max-width:70%;font-size:1.7cqh;font-weight:600;background:#217346;color:#fff;padding:.4cqh .8cqw;border-radius:4px;pointer-events:none;box-shadow:0 .4cqh 1.2cqh rgba(0,0,0,.4)}
+.enui small{font-weight:500;opacity:.8;margin-right:.5cqw}
+.path kbd small{display:block;font-size:1.15cqh;color:var(--mist);margin-top:.1cqh}
+.tips{align-self:start;max-height:calc(100% - 17cqh);overflow:auto;display:grid;gap:.9cqh;font-size:1.6cqh;line-height:1.45}
+.tips h3{font-size:1.5cqh;font-weight:700;color:var(--mist);letter-spacing:.04em}
+.tips p{background:rgba(255,255,255,.07);border-left:4px solid var(--cell);padding:.8cqh .8cqw;border-radius:4px}
+.tips p.warn{background:rgba(200,16,46,.18);border-left-color:#FF5A6E}
+.tips p.warn::before{content:"⚠ ";color:#FF8A99;font-weight:700}
+.thumb{position:absolute;right:0;bottom:0;width:15cqw;border:3px solid #fff;border-radius:6px;overflow:hidden;cursor:zoom-in;
+  box-shadow:0 1cqh 3cqh rgba(0,0,0,.5);transition:all .35s cubic-bezier(.2,.8,.2,1);z-index:5;background:#000}
+.thumb img{display:block;width:100%}
+.thumb figcaption{position:absolute;left:0;right:0;bottom:0;font-size:1.25cqh;padding:.4cqh .6cqw;background:rgba(0,0,0,.6)}
+.thumb.big{position:fixed;inset:0;width:100%;height:100%;border:0;border-radius:0;cursor:zoom-out;display:grid;place-items:center;z-index:50;background:rgba(0,0,0,.92)}
+.thumb.big img{width:auto;max-width:96%;max-height:92%}
+.subtitle{position:absolute;left:0;right:22cqw;bottom:3cqh;display:flex;justify-content:center;pointer-events:none;z-index:4}
+.subtitle p{font-size:2.6cqh;line-height:1.4;background:rgba(10,20,16,.82);padding:.7cqh 1.6cqw;border-radius:6px;max-width:62%;text-align:center}
+.subtitle p:empty{display:none}
+.bottom{display:flex;align-items:center;justify-content:space-between;gap:1cqw}
+.path{display:flex;flex-wrap:wrap;gap:.5cqw;align-items:center;font-size:1.6cqh;color:var(--mist)}
+.path kbd{font:inherit;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-bottom-width:3px;border-radius:6px;padding:.3cqh .7cqw}
+.nav{display:flex;gap:.7cqw}
+.nav button{padding:1cqh 1.6cqw;border-radius:99px;font-size:1.75cqh;font-weight:600;border:1px solid rgba(255,255,255,.3)}
+.nav button:disabled{opacity:.35;cursor:default}
+.nav .go{background:var(--cell);color:var(--ink);border-color:var(--cell)}
+.nav .go.wait{background:transparent;color:var(--mist);border-color:rgba(255,255,255,.3)}
+.nav .finish{background:var(--crest);border-color:var(--crest);color:#fff}
+
+/* ---------- Finish ---------- */
+.done{position:absolute;inset:0;display:none;place-items:center;background:url("assets/forest_202610211512.jpg") center/cover}
+.done.on{display:grid}
+.done .form h1{font-size:3.4cqh}
+canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
+
+/* ---------- Full video ---------- */
+.full{position:absolute;inset:0;z-index:70;display:none;grid-template-rows:auto minmax(0,1fr);gap:1.4cqh;padding:2.2cqh 2.4cqw 2.4cqh;background:rgba(8,18,14,.97)}
+.full.on{display:grid}
+.full header{display:flex;align-items:center;gap:1.2cqw}
+.full h2{font-size:3cqh;font-weight:700;flex:1}
+.full select{font:inherit;font-size:1.6cqh;color:#fff;background:rgba(255,255,255,.08);padding:.7cqh .8cqw;border-radius:6px;border:1px solid rgba(255,255,255,.18);max-width:28cqw;cursor:pointer}
+.full select option{color:#000}
+.full .close{padding:.9cqh 1.6cqw;border-radius:99px;font-size:1.7cqh;font-weight:600;border:1px solid rgba(255,255,255,.3)}
+.full video{width:100%;height:100%;min-height:0;object-fit:contain;background:#000;border-radius:6px}
+.tools .fullBtn,.fullPill{background:var(--cell);color:var(--ink);border-color:var(--cell);font-weight:600}
+.fullPill{border-radius:99px;padding:.9cqh 2cqw;font-size:1.6cqh}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <section class="intro" id="intro">
+    <div class="form">
+      <img src="assets/logo_202610211512.gif" alt="聖若瑟教區中學第五校校徽">
+      <h1 data-t="introTitle"></h1>
+      <div class="fields" aria-hidden="true">
+        <span>Name</span><span>Sam</span>
+        <span>Chinese</span><span>70</span>
+        <span>English</span><span>80</span>
+        <span>Math</span><span>90</span>
+      </div>
+      <div class="langpick" role="group" aria-label="Language">
+        <button data-lang="en">English</button>
+        <button data-lang="yue">廣東話</button>
+      </div>
+      <button class="pill" id="start" data-t="start"></button>
+      <button class="fullPill" id="fullIntro" data-t="full"></button>
+    </div>
+  </section>
+
+  <section class="lesson" id="lesson" aria-live="polite">
+    <div class="progress" id="progress"></div>
+    <div class="topbar">
+      <div class="stepno" id="stepno"></div>
+      <h2 class="title" id="title"></h2>
+      <div class="tools">
+        <select id="jump" aria-label="Jump to step"></select>
+        <button id="fullBtn" class="fullBtn" data-t="full"></button>
+        <button id="langBtn" title="Language"></button>
+        <button id="speedBtn" title="Video speed">1×</button>
+        <button id="origBtn" aria-pressed="false" data-t="orig"></button>
+        <button id="muteBtn" aria-pressed="false" data-t="music"></button>
+        <input id="vol" type="range" min="0" max="1" step="0.05" value="0.35" aria-label="Music volume">
+      </div>
+    </div>
+    <div class="screen">
+      <div class="vwrap" id="vwrap">
+        <video id="video" playsinline muted preload="auto"></video>
+        <span class="zoomhint" data-t="zoom"></span>
+        <span class="loading" data-t="loading"></span>
+        <span class="enui" id="enui"></span>
+      </div>
+      <aside class="tips" id="tips"></aside>
+      <figure class="thumb" id="thumb" tabindex="0" role="button">
+        <img id="thumbImg" alt="">
+        <figcaption data-t="result"></figcaption>
+      </figure>
+      <div class="subtitle"><p id="sub"></p></div>
+    </div>
+    <div class="bottom">
+      <div class="path" id="path"></div>
+      <div class="nav">
+        <button id="prev" data-t="prev"></button>
+        <button id="replay" data-t="replay"></button>
+        <button id="next" class="go"></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="done" id="done">
+    <div class="form">
+      <img src="assets/logo_202610211512.gif" alt="">
+      <h1 data-t="doneTitle"></h1>
+      <p style="font-size:1.8cqh;color:#444;text-align:center;max-width:20cqw;line-height:1.5" data-t="doneText"></p>
+      <button class="pill" id="again" data-t="again"></button>
+    </div>
+  </section>
+  <section class="full" id="full" role="dialog" aria-modal="true">
+    <header>
+      <h2 data-t="fullTitle"></h2>
+      <select id="chapter" aria-label="Chapter"></select>
+      <button class="close" id="fullClose" data-t="close"></button>
+    </header>
+    <video id="fullVideo" controls playsinline preload="metadata" src="full/Excel_Login_Full_202610221030.mp4"></video>
+  </section>
+  <canvas id="fx"></canvas>
+</div>
+
+<script>
+const STEPS = [{"id": 1, "start": 0, "end": 60, "path": "Form › Login results › Score", "title": {"en": "Preview the finished form", "yue": "成品預覽"}, "clip": "clips/step01_202610221110.mp4", "thumb": "thumbs/step01_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s01_1_202610211512.mp3", "sub": "In this lesson, we build a score login form in Excel.", "dur": 4.73}, {"audio": "audio/en_s01_2_202610211512.mp3", "sub": "Type a name and three marks, then click Login results.", "dur": 4.75}, {"audio": "audio/en_s01_3_202610211512.mp3", "sub": "The record is saved to the Score sheet, and the mean is calculated for you.", "dur": 5.57}], "yue": [{"audio": "audio/yue_s01_1_202610211512.mp3", "sub": "今堂我哋用 Excel 整一個成績登入表格。", "dur": 4.22}, {"audio": "audio/yue_s01_2_202610220931.mp3", "sub": "輸入姓名同三科分數，再按 Login results。", "dur": 4.8}, {"audio": "audio/yue_s01_3_202610211512.mp3", "sub": "資料會自動記錄喺 Score 工作表，仲會幫你計好平均分。", "dur": 5.88}]}, "tips": [{"warn": false, "en": "Click the video to zoom in. Click again to zoom out.", "yue": "按影片可以放大睇細節，再按一下還原。"}, {"warn": false, "en": "Use the step menu at the top to jump to any step.", "yue": "用上面嘅步驟選單，可以跳去任何一步。"}]}, {"id": 2, "start": 60, "end": 100, "path": "版面配置 › 背景", "title": {"en": "Add a background picture", "yue": "加入背景圖片"}, "clip": "clips/step02_202610221110.mp4", "thumb": "thumbs/step02_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s02_1_202610211512.mp3", "sub": "Open a new workbook.", "dur": 2.69}, {"audio": "audio/en_s02_2_202610211512.mp3", "sub": "Go to Page Layout › Background (版面配置 › 背景), and choose the forest picture.", "dur": 5.26}], "yue": [{"audio": "audio/yue_s02_1_202610211512.mp3", "sub": "開一個新嘅活頁簿。", "dur": 2.74}, {"audio": "audio/yue_s02_2_202610220931.mp3", "sub": "去「版面配置」，按「背景」，揀森林嗰張相。", "dur": 5.14}]}, "tips": [{"warn": false, "en": "Use Page Layout › Background, not Insert › Pictures.", "yue": "用「版面配置 › 背景」，唔係「插入 › 圖片」。"}]}, {"id": 3, "start": 100, "end": 135, "path": "常用 › 填滿色彩 › 白色　｜　欄寬", "title": {"en": "Make the white card", "yue": "整白色底卡"}, "clip": "clips/step03_202610221110.mp4", "thumb": "thumbs/step03_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s03_1_202610211512.mp3", "sub": "Select a block of cells and fill it white. This is our form card.", "dur": 6.31}, {"audio": "audio/en_s03_2_202610211512.mp3", "sub": "Change the column width (欄寬) so the card looks neat.", "dur": 3.98}], "yue": [{"audio": "audio/yue_s03_1_202610211512.mp3", "sub": "揀一片儲存格，填上白色，做表格嘅底卡。", "dur": 4.85}, {"audio": "audio/yue_s03_2_202610211512.mp3", "sub": "再調整欄寬，令張卡睇落整齊啲。", "dur": 4.32}]}, "tips": [{"warn": false, "en": "Select a big block of cells first, then fill white once.", "yue": "先揀一大片儲存格，一次過填白色。"}]}, {"id": 4, "start": 135, "end": 160, "path": "插入 › 圖片", "title": {"en": "Insert the school logo", "yue": "插入校徽"}, "clip": "clips/step04_202610221110.mp4", "thumb": "thumbs/step04_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s04_1_202610211512.mp3", "sub": "Go to Insert › Pictures (插入 › 圖片), and add the school logo.", "dur": 4.56}, {"audio": "audio/en_s04_2_202610211512.mp3", "sub": "Resize it and place it at the top of the card.", "dur": 3.94}], "yue": [{"audio": "audio/yue_s04_1_202610220931.mp3", "sub": "去「插入」，再按「圖片」，加入校徽。", "dur": 4.37}, {"audio": "audio/yue_s04_2_202610211512.mp3", "sub": "調好大細，放喺白卡上面。", "dur": 3.94}]}, "tips": [{"warn": false, "en": "The logo floats above the cells. Drag it freely.", "yue": "校徽浮喺儲存格上面，可以自由拖動。"}]}, {"id": 5, "start": 160, "end": 270, "path": "填滿色彩 › 淺綠　｜　列高", "title": {"en": "Labels and input cells", "yue": "標籤同輸入格"}, "clip": "clips/step05_202610221110.mp4", "thumb": "thumbs/step05_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s05_1_202610211512.mp3", "sub": "Type the labels: Name, Chinese, English and Math.", "dur": 4.78}, {"audio": "audio/en_s05_2_202610211512.mp3", "sub": "Fill the input cells next to them light green.", "dur": 3.91}, {"audio": "audio/en_s05_3_202610211512.mp3", "sub": "Adjust the row height (列高) to add space between the rows.", "dur": 4.22}], "yue": [{"audio": "audio/yue_s05_1_202610211512.mp3", "sub": "打入標籤：Name、Chinese、English 同 Math。", "dur": 4.92}, {"audio": "audio/yue_s05_2_202610211512.mp3", "sub": "旁邊嘅輸入格填上淺綠色。", "dur": 3.41}, {"audio": "audio/yue_s05_3_202610211512.mp3", "sub": "再調整列高，令每行之間有啲空位。", "dur": 4.34}]}, "tips": [{"warn": false, "en": "Remember where the 4 green cells are. The macro copies them later.", "yue": "記住四個綠色格嘅位置，之後巨集要複製佢哋。"}]}, {"id": 6, "start": 270, "end": 353, "path": "插入 › 圖案　｜　檢視 › 格線", "title": {"en": "Draw the Login button", "yue": "畫 Login 掣"}, "clip": "clips/step06_202610221110.mp4", "thumb": "thumbs/step06_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s06_1_202610211512.mp3", "sub": "Go to Insert › Shapes (插入 › 圖案), and draw a rounded rectangle.", "dur": 4.78}, {"audio": "audio/en_s06_2_202610211512.mp3", "sub": "Fill it black and type Login results.", "dur": 3.7}, {"audio": "audio/en_s06_3_202610211512.mp3", "sub": "On the View tab (檢視), turn off Gridlines (格線) for a clean look.", "dur": 4.56}], "yue": [{"audio": "audio/yue_s06_1_202610220931.mp3", "sub": "去「插入」，再按「圖案」，畫一個圓角矩形。", "dur": 4.66}, {"audio": "audio/yue_s06_2_202610211512.mp3", "sub": "填黑色，打上 Login results。", "dur": 3.36}, {"audio": "audio/yue_s06_3_202610211512.mp3", "sub": "喺「檢視」度剔走「格線」，畫面就乾淨好多。", "dur": 4.7}]}, "tips": [{"warn": false, "en": "The button is a shape. You link it to the macro in step 13.", "yue": "個掣只係一個圖案，第 13 步先會連去巨集。"}]}, {"id": 7, "start": 353, "end": 468, "path": "新增工作表 › Score　｜　第 2 列示範資料　｜　E2 =AVERAGE(B2:D2)", "title": {"en": "Set up the Score sheet", "yue": "設定 Score 工作表"}, "clip": "clips/step07_202610221110.mp4", "thumb": "thumbs/step07_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s07_1_202610211512.mp3", "sub": "Add a new sheet and name it Score.", "dur": 3.34}, {"audio": "audio/en_s07_2_202610211512.mp3", "sub": "In row 1, type Name, Chinese, English, Math and Mean.", "dur": 5.23}, {"audio": "audio/en_s07_x1_202610220919.mp3", "sub": "In row 2, type one sample record, for example A, 60, 70 and 80.", "dur": 6.74}, {"audio": "audio/en_s07_x2_202610220919.mp3", "sub": "In E2, type =AVERAGE(B2:D2). The macro needs this row, so don't skip it!", "dur": 8.64}, {"audio": "audio/en_s07_3_202610211512.mp3", "sub": "Then go back to the Form sheet and type some test data.", "dur": 4.3}], "yue": [{"audio": "audio/yue_s07_1_202610211512.mp3", "sub": "新增一個工作表，改名做 Score。", "dur": 4.1}, {"audio": "audio/yue_s07_2_202610211512.mp3", "sub": "第一列打 Name、Chinese、English、Math 同 Mean。", "dur": 5.52}, {"audio": "audio/yue_s07_x1_202610220919.mp3", "sub": "第二列先打一筆示範資料，例如 A、60、70、80。", "dur": 6.22}, {"audio": "audio/yue_s07_x2_202610220919.mp3", "sub": "喺 E2 打 =AVERAGE(B2:D2)。之後錄巨集一定要用到呢一列，千祈唔好漏！", "dur": 9.48}, {"audio": "audio/yue_s07_3_202610211512.mp3", "sub": "再返去 Form 工作表，輸入一組測試資料。", "dur": 4.73}]}, "tips": [{"warn": true, "en": "Score row 2 MUST have a sample record (A, 60, 70, 80) before you record.", "yue": "錄巨集之前，Score 第二列一定要有示範資料（A、60、70、80）。"}, {"warn": true, "en": "E2 must contain =AVERAGE(B2:D2).", "yue": "E2 一定要有 =AVERAGE(B2:D2)。"}, {"warn": false, "en": "Without row 2, Ctrl + ↓ jumps to row 1048576 and the paste fails.", "yue": "冇第二列，Ctrl + ↓ 會跳去第 1048576 列，貼上就會失敗。"}]}, {"id": 8, "start": 468, "end": 500, "path": "檔案 › 選項 › 自訂功能區 › 開發人員", "title": {"en": "Show the Developer tab", "yue": "開啟「開發人員」"}, "clip": "clips/step08_202610221110.mp4", "thumb": "thumbs/step08_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s08_1_202610211512.mp3", "sub": "To record a macro, we need the Developer tab.", "dur": 4.22}, {"audio": "audio/en_s08_2_202610211512.mp3", "sub": "Go to File › Options › Customize Ribbon (檔案 › 選項 › 自訂功能區), and tick Developer (開發人員).", "dur": 5.28}], "yue": [{"audio": "audio/yue_s08_1_202610211512.mp3", "sub": "要錄巨集，先要開「開發人員」索引標籤。", "dur": 4.68}, {"audio": "audio/yue_s08_2_202610211512.mp3", "sub": "去「檔案」、「選項」、「自訂功能區」，剔「開發人員」。", "dur": 6.1}]}, "tips": [{"warn": false, "en": "You only need to do this once on each computer.", "yue": "每部電腦只需要做一次。"}]}, {"id": 9, "start": 500, "end": 532, "path": "開發人員 › 錄製巨集", "title": {"en": "Start recording the macro", "yue": "開始錄製巨集"}, "clip": "clips/step09_202610221110.mp4", "thumb": "thumbs/step09_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s09_x3_202610220919.mp3", "sub": "Before you record, check that row 2 of the Score sheet has the sample record.", "dur": 5.88}, {"audio": "audio/en_s09_1_202610211512.mp3", "sub": "On the Developer tab, click Record Macro (錄製巨集).", "dur": 4.1}, {"audio": "audio/en_s09_2_202610211512.mp3", "sub": "Name it Test and click OK. From now on, Excel records every step.", "dur": 6.89}, {"audio": "audio/en_s09_x2_202610220919.mp3", "sub": "While recording, every click is saved. Do not click anything extra.", "dur": 6.58}, {"audio": "audio/en_s09_3_202610211512.mp3", "sub": "First, select the four input cells and copy them.", "dur": 4.58}, {"audio": "audio/en_s09_x1_202610220919.mp3", "sub": "Select only the four green cells, not the labels. The status bar should show Count 4.", "dur": 7.73}], "yue": [{"audio": "audio/yue_s09_x3_202610220919.mp3", "sub": "錄之前，先睇清楚 Score 第二列係咪已經有示範資料。", "dur": 5.59}, {"audio": "audio/yue_s09_1_202610220931.mp3", "sub": "喺「開發人員」按「錄製巨集」。", "dur": 3.82}, {"audio": "audio/yue_s09_2_202610220931.mp3", "sub": "巨集名稱打 Test，按確定。由而家開始，Excel 會記低你每一個動作。", "dur": 8.11}, {"audio": "audio/yue_s09_x2_202610220931.mp3", "sub": "錄緊嘅時候，你每一下按滑鼠都會被記低，唔好亂按。", "dur": 5.95}, {"audio": "audio/yue_s09_3_202610211512.mp3", "sub": "首先揀四個輸入格，複製。", "dur": 3.62}, {"audio": "audio/yue_s09_x1_202610220919.mp3", "sub": "只揀四個綠色格，唔好揀埋標籤。下面狀態列應該顯示「計數：4」。", "dur": 8.71}]}, "tips": [{"warn": true, "en": "Check first: Score row 2 has data, and E2 has the formula.", "yue": "開始前檢查：Score 第二列有資料，E2 有公式。"}, {"warn": false, "en": "Macro name: Test (no spaces). Store in: This Workbook (此活頁簿).", "yue": "巨集名稱：Test（唔好有空格）；儲存於：此活頁簿。"}, {"warn": true, "en": "Every click is recorded. Move slowly. Do not use Ctrl + Z.", "yue": "每一下都會被錄低，慢慢做，唔好用 Ctrl + Z。"}, {"warn": false, "en": "Select only the 4 green cells. Status bar shows Count: 4.", "yue": "只揀四個綠色格，狀態列會顯示「計數：4」。"}]}, {"id": 10, "start": 532, "end": 600, "path": "A1 › Ctrl + ↓　｜　以相對位置錄製 › ↓　｜　選擇性貼上 › 值 + 轉置", "title": {"en": "Paste into the Score sheet", "yue": "貼去 Score 工作表"}, "clip": "clips/step10_202610221110.mp4", "thumb": "thumbs/step10_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s10_1_202610211512.mp3", "sub": "Go to the Score sheet and click cell A1.", "dur": 3.74}, {"audio": "audio/en_s10_x2_202610220919.mp3", "sub": "Make sure Use Relative References is still off when you click A1.", "dur": 5.16}, {"audio": "audio/en_s10_2_202610211512.mp3", "sub": "Press Control and the Down Arrow to jump to the last record.", "dur": 4.66}, {"audio": "audio/en_s10_3_202610211512.mp3", "sub": "Turn on Use Relative References (以相對位置錄製), then move down one row.", "dur": 4.92}, {"audio": "audio/en_s10_4_202610211512.mp3", "sub": "Right-click, choose Paste Special (選擇性貼上), and tick Transpose (轉置).", "dur": 4.61}, {"audio": "audio/en_s10_x1_202610220919.mp3", "sub": "In Paste Special, choose Values (值) and tick Transpose (轉置). You need both.", "dur": 7.01}], "yue": [{"audio": "audio/yue_s10_1_202610220931.mp3", "sub": "去 Score 工作表，按 A1。", "dur": 3.14}, {"audio": "audio/yue_s10_x2_202610220931.mp3", "sub": "按 A1 嗰陣，「以相對位置錄製」一定要仲未開。", "dur": 5.16}, {"audio": "audio/yue_s10_2_202610220931.mp3", "sub": "按 Control 加向下鍵，跳去最後一筆紀錄。", "dur": 4.66}, {"audio": "audio/yue_s10_3_202610211512.mp3", "sub": "開「以相對位置錄製」，再向下移一格。", "dur": 4.46}, {"audio": "audio/yue_s10_4_202610220931.mp3", "sub": "按右鍵，揀「選擇性貼上」，剔「轉置」。", "dur": 5.16}, {"audio": "audio/yue_s10_x1_202610220919.mp3", "sub": "喺「選擇性貼上」入面，揀「值」，再剔「轉置」，兩樣都要。", "dur": 5.98}]}, "tips": [{"warn": true, "en": "Order matters: A1 → Ctrl + ↓ → turn ON Relative → ↓ once.", "yue": "次序好重要：A1 → Ctrl + ↓ → 開「以相對位置錄製」→ ↓ 一下。"}, {"warn": true, "en": "Paste Special: choose Values (值) AND tick Transpose (轉置).", "yue": "選擇性貼上：揀「值」，再剔「轉置」，兩樣都要。"}, {"warn": false, "en": "Relative button looks highlighted (grey) when it is ON.", "yue": "「以相對位置錄製」開咗會變灰色（highlight）。"}]}, {"id": 11, "start": 600, "end": 634, "path": "=AVERAGE(B3:D3)", "title": {"en": "Calculate the mean", "yue": "計平均分"}, "clip": "clips/step11_202610221110.mp4", "thumb": "thumbs/step11_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s11_1_202610211512.mp3", "sub": "Fill the AVERAGE formula down to the new row to get the mean.", "dur": 4.68}, {"audio": "audio/en_s11_x2_202610220919.mp3", "sub": "Click the last cell with the formula in column E, then drag the small square down one row.", "dur": 6.41}, {"audio": "audio/en_s11_2_202610211512.mp3", "sub": "Then turn off Use Relative References.", "dur": 3.72}, {"audio": "audio/en_s11_x1_202610220919.mp3", "sub": "Turn it off before you go back to the Form sheet, or the wrong cells will be cleared.", "dur": 5.71}], "yue": [{"audio": "audio/yue_s11_1_202610211512.mp3", "sub": "將 AVERAGE 公式向下填到新嗰列，計出平均分。", "dur": 5.11}, {"audio": "audio/yue_s11_x2_202610220931.mp3", "sub": "按 E 欄最後一格有公式嘅格，拖佢右下角嘅小方點，向下拉一格。", "dur": 6.67}, {"audio": "audio/yue_s11_2_202610211512.mp3", "sub": "然後閂返「以相對位置錄製」。", "dur": 4.3}, {"audio": "audio/yue_s11_x1_202610220919.mp3", "sub": "一定要喺返去 Form 之前閂咗佢，唔係就會清錯位置。", "dur": 5.71}]}, "tips": [{"warn": false, "en": "Drag the small square at the bottom-right of the formula cell down 1 row.", "yue": "拖公式格右下角嘅小方點，向下一格就夠。"}, {"warn": true, "en": "Turn OFF Relative References before going back to Form.", "yue": "返去 Form 之前，一定要閂「以相對位置錄製」。"}]}, {"id": 12, "start": 634, "end": 668, "path": "常用 › 清除 › 清除內容　｜　停止錄製", "title": {"en": "Clear the form and stop", "yue": "清空表格，停止錄製"}, "clip": "clips/step12_202610221110.mp4", "thumb": "thumbs/step12_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s12_1_202610211512.mp3", "sub": "Go back to the Form sheet.", "dur": 2.93}, {"audio": "audio/en_s12_2_202610211512.mp3", "sub": "Select the input cells and clear the contents (清除內容).", "dur": 4.13}, {"audio": "audio/en_s12_x1_202610220919.mp3", "sub": "Before you stop, click the green Name cell, ready for the next input.", "dur": 5.54}, {"audio": "audio/en_s12_3_202610211512.mp3", "sub": "Click Stop Recording (停止錄製). The macro is ready.", "dur": 5.04}], "yue": [{"audio": "audio/yue_s12_1_202610211512.mp3", "sub": "返去 Form 工作表。", "dur": 2.64}, {"audio": "audio/yue_s12_2_202610211512.mp3", "sub": "揀返輸入格，清除內容。", "dur": 3.34}, {"audio": "audio/yue_s12_x1_202610220931.mp3", "sub": "停止之前，按返 Name 嘅綠色格，方便下次輸入。", "dur": 5.11}, {"audio": "audio/yue_s12_3_202610220931.mp3", "sub": "按「停止錄製」，個巨集就整好喇。", "dur": 4.13}]}, "tips": [{"warn": false, "en": "Home › Clear › Clear Contents. Do not press Delete on the labels.", "yue": "用「常用 › 清除 › 清除內容」，唔好清埋標籤。"}, {"warn": true, "en": "Click Stop Recording. If you forget, Excel keeps recording.", "yue": "記得按「停止錄製」，否則 Excel 會一直錄落去。"}]}, {"id": 13, "start": 668, "end": 716, "path": "右鍵 › 指定巨集 › Test", "title": {"en": "Link the button to the macro", "yue": "將掣連去巨集"}, "clip": "clips/step13_202610221110.mp4", "thumb": "thumbs/step13_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s13_1_202610211512.mp3", "sub": "Right-click the Login results button and choose Assign Macro (指定巨集).", "dur": 4.87}, {"audio": "audio/en_s13_2_202610211512.mp3", "sub": "Select Test and click OK.", "dur": 3.19}, {"audio": "audio/en_s13_3_202610211512.mp3", "sub": "Type new data and click the button to test it.", "dur": 4.03}, {"audio": "audio/en_s13_x1_202610220919.mp3", "sub": "If you recorded a mistake, delete the macro, delete the extra rows in Score, and record again.", "dur": 7.46}], "yue": [{"audio": "audio/yue_s13_1_202610220931.mp3", "sub": "喺 Login results 掣按右鍵，揀「指定巨集」。", "dur": 4.66}, {"audio": "audio/yue_s13_2_202610220931.mp3", "sub": "揀 Test，按確定。", "dur": 2.9}, {"audio": "audio/yue_s13_3_202610220931.mp3", "sub": "輸入新資料，按個掣試吓。", "dur": 3.84}, {"audio": "audio/yue_s13_x1_202610220919.mp3", "sub": "如果錄錯咗，唔使驚：刪除個巨集，刪走 Score 多咗嘅資料，再錄一次。", "dur": 7.44}]}, "tips": [{"warn": false, "en": "Right-click the button's edge, not the text inside.", "yue": "喺個掣嘅邊位按右鍵，唔好按入面啲字。"}, {"warn": true, "en": "Error 1004 or data in the wrong row? Delete the macro (Developer › Macros › Delete), clean the Score sheet, and record again from step 9.", "yue": "出現錯誤 1004 或者資料去錯列？去「開發人員 › 巨集 › 刪除」，清理 Score，再由第 9 步重錄。"}]}, {"id": 14, "start": 716, "end": 790, "path": "儲存格格式 › 保護 › 鎖定　｜　校閱 › 保護工作表", "title": {"en": "Protect the form", "yue": "保護表格"}, "clip": "clips/step14_202610221110.mp4", "thumb": "thumbs/step14_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s14_1_202610211512.mp3", "sub": "Now protect the form. Select the input cells.", "dur": 5.66}, {"audio": "audio/en_s14_2_202610211512.mp3", "sub": "Open Format Cells › Protection (儲存格格式 › 保護), and untick Locked (鎖定).", "dur": 4.94}, {"audio": "audio/en_s14_3_202610211512.mp3", "sub": "Then go to Review › Protect Sheet (校閱 › 保護工作表), and set a password.", "dur": 4.66}], "yue": [{"audio": "audio/yue_s14_1_202610211512.mp3", "sub": "跟住保護個表格，先揀輸入格。", "dur": 3.77}, {"audio": "audio/yue_s14_2_202610211512.mp3", "sub": "開「儲存格格式」，去「保護」，剔走「鎖定」。", "dur": 5.16}, {"audio": "audio/yue_s14_3_202610211512.mp3", "sub": "再去「校閱」、「保護工作表」，設定密碼。", "dur": 4.49}]}, "tips": [{"warn": false, "en": "Only protect the Form sheet. Do not protect Score.", "yue": "只保護 Form 工作表，唔好保護 Score。"}, {"warn": false, "en": "Write down your password.", "yue": "記低你嘅密碼。"}]}, {"id": 15, "start": 790, "end": 836, "path": "Form › Login results › Score", "title": {"en": "Test the protected form", "yue": "測試受保護嘅表格"}, "clip": "clips/step15_202610221110.mp4", "thumb": "thumbs/step15_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s15_1_202610211512.mp3", "sub": "Test the form again. Only the green cells can be changed.", "dur": 5.95}, {"audio": "audio/en_s15_2_202610211512.mp3", "sub": "Type a name and marks, then click Login results.", "dur": 4.51}, {"audio": "audio/en_s15_3_202610211512.mp3", "sub": "Each record is added to the Score sheet.", "dur": 3.62}], "yue": [{"audio": "audio/yue_s15_1_202610211512.mp3", "sub": "再測試一次，而家只可以改綠色嘅格。", "dur": 4.32}, {"audio": "audio/yue_s15_2_202610220931.mp3", "sub": "輸入姓名同分數，按 Login results。", "dur": 4.13}, {"audio": "audio/yue_s15_3_202610211512.mp3", "sub": "每一筆紀錄都會加入 Score 工作表。", "dur": 3.72}]}, "tips": [{"warn": false, "en": "Add 2–3 records and check each one goes to a new row.", "yue": "輸入兩三筆資料，檢查每筆都去咗新嘅一列。"}]}, {"id": 16, "start": 836, "end": 867.3, "path": "另存新檔 › Excel 啟用巨集的活頁簿 (*.xlsm)", "title": {"en": "Save as a macro-enabled file", "yue": "儲存為巨集活頁簿"}, "clip": "clips/step16_202610221110.mp4", "thumb": "thumbs/step16_202610211512.jpg", "lines": {"en": [{"audio": "audio/en_s16_1_202610211512.mp3", "sub": "Finally, save the file as an Excel Macro-Enabled Workbook (Excel 啟用巨集的活頁簿, *.xlsm).", "dur": 6.91}, {"audio": "audio/en_s16_2_202610211512.mp3", "sub": "File name: Class_Number_Name_Date.xlsm. Well done!", "dur": 5.71}, {"audio": "audio/en_s16_x1_202610220919.mp3", "sub": "Next time you open the file, click Enable Content (啟用內容), or the button will not work.", "dur": 6.29}], "yue": [{"audio": "audio/yue_s16_1_202610211512.mp3", "sub": "最後，另存新檔，存檔類型揀「Excel 啟用巨集的活頁簿」（*.xlsm）。", "dur": 7.61}, {"audio": "audio/yue_s16_2_202610211512.mp3", "sub": "檔名：Class_Number_Name_Date.xlsm。完成！", "dur": 5.88}, {"audio": "audio/yue_s16_x1_202610220931.mp3", "sub": "下次開返個檔，記得按「啟用內容」，個掣先會用到。", "dur": 5.62}]}, "tips": [{"warn": true, "en": "Save as .xlsm. A normal .xlsx deletes the macro.", "yue": "一定要存做 .xlsm，存 .xlsx 會冇咗個巨集。"}, {"warn": false, "en": "When you reopen the file, click Enable Content (啟用內容).", "yue": "再開檔時，按「啟用內容」。"}]}];
+const UI = {
+  en:{introTitle:"Build a score login form<small>Excel macro, 16 steps</small>",start:"Start tutorial",prev:"Previous",replay:"Replay",
+      next:"Continue",playing:"Skip ›",loading:"Loading…",finish:"Finish",orig:"Original sound",music:"Music",result:"Result of this step (click to enlarge)",
+      doneTitle:"Form complete!",doneText:"Your file is saved as Class_Number_Name_Date.xlsm.",again:"Watch again",step:"of",lang:"廣東話",
+      full:"▶ Full video",fullTitle:"Full video (14:27)",close:"Close ✕",chapter:"Jump to step",
+      zoom:"Click video to zoom",tips:"TIPS"},
+  yue:{introTitle:"整一個成績登入表格<small>Excel 巨集，共 16 步</small>",start:"開始教學",prev:"上一步",replay:"重播",
+      next:"繼續",playing:"略過 ›",loading:"載入中…",finish:"完成",orig:"原聲",music:"音樂",result:"呢一步嘅結果（按一下放大）",
+      doneTitle:"完成！",doneText:"記得存做 Class_Number_Name_Date.xlsm。",again:"再睇一次",step:"／",lang:"English",
+      full:"▶ 完整影片",fullTitle:"完整影片（14:27）",close:"關閉 ✕",chapter:"跳去步驟",
+      zoom:"按影片放大",tips:"提示"}
+};
+let lang = (()=>{try{return localStorage.getItem("xl-lang")||"yue"}catch(e){return "yue"}})();
+let cur = 0, videoDone = false, voiceDone = false, token = 0;
+const $ = id => document.getElementById(id);
+const video = $("video"), voice = new Audio();
+const speeds = [1,1.5,2]; let speedIx = 0;
+
+function applyLang(){
+  document.documentElement.lang = lang==="en" ? "en" : "zh-HK";
+  document.querySelectorAll("[data-t]").forEach(el=>el.innerHTML = UI[lang][el.dataset.t]);
+  document.querySelectorAll("[data-lang]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.lang===lang));
+  $("langBtn").textContent = UI[lang].lang;
+  buildJump();
+  try{localStorage.setItem("xl-lang",lang)}catch(e){}
+}
+
+/* ---------- Music: generated with Web Audio, looping ---------- */
+let ac, musicGain, master, musicTimer, musicOn = true, beat = 0;
+const BPM = 112, SPB = 60/BPM;
+const CHORDS = [[60,64,67],[67,71,74],[69,72,76],[65,69,72]]; // C G Am F
+function initAudio(){
+  if(ac) return;
+  ac = new (window.AudioContext||window.webkitAudioContext)();
+  master = ac.createGain(); master.connect(ac.destination);
+  musicGain = ac.createGain(); musicGain.gain.value = +$("vol").value; musicGain.connect(master);
+}
+const hz = m => 440*Math.pow(2,(m-69)/12);
+function pluck(t,m,len,vol,type="triangle"){
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.type=type; o.frequency.value=hz(m);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.01); g.gain.exponentialRampToValueAtTime(0.0008,t+len);
+  o.connect(g); g.connect(musicGain); o.start(t); o.stop(t+len+0.05);
+}
+function hat(t,vol){
+  const b=ac.createBuffer(1,ac.sampleRate*0.05,ac.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+  const s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain();
+  f.type="highpass"; f.frequency.value=7000; g.gain.value=vol;
+  s.buffer=b; s.connect(f); f.connect(g); g.connect(musicGain); s.start(t);
+}
+function kick(t){
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.frequency.setValueAtTime(130,t); o.frequency.exponentialRampToValueAtTime(45,t+0.15);
+  g.gain.setValueAtTime(0.5,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+  o.connect(g); g.connect(musicGain); o.start(t); o.stop(t+0.22);
+}
+let nextT = 0;
+function scheduler(){
+  while(nextT < ac.currentTime + 0.25){
+    const bar = Math.floor(beat/8)%4, ch = CHORDS[bar], e = beat%8;
+    if(e%4===0) kick(nextT);
+    hat(nextT, e%2 ? 0.05 : 0.025);
+    const arp = [0,1,2,1,0,2,1,2][e];
+    pluck(nextT, ch[arp]+12, SPB*0.9, 0.08);
+    if(e===0){ pluck(nextT, ch[0]-12, SPB*3.5, 0.12, "sine"); }
+    nextT += SPB/2; beat++;
+  }
+}
+function startMusic(){
+  initAudio(); ac.resume();
+  nextT = ac.currentTime + 0.05;
+  clearInterval(musicTimer); musicTimer = setInterval(scheduler, 60);
+}
+function setMusicLevel(){
+  if(!musicGain) return;
+  const base = musicOn && !$("full").classList.contains("on") ? +$("vol").value : 0;
+  const duck = voice.paused ? 1 : 0.35;               // quieter while narration plays
+  musicGain.gain.setTargetAtTime(base*duck, ac.currentTime, 0.15);
+}
+
+/* ---------- Steps ---------- */
+function buildProgress(){
+  $("progress").innerHTML = STEPS.map(()=>"<i></i>").join("");
+  [...$("progress").children].forEach((el,i)=>el.onclick = () => go(i));
+}
+function buildJump(){
+  $("jump").innerHTML = STEPS.map((s,i)=>`<option value="${i}">${i+1}. ${s.title[lang]}</option>`).join("");
+  $("jump").value = cur;
+  [...$("progress").children].forEach((el,i)=>el.title = `${i+1}. ${STEPS[i].title[lang]}`);
+}
+/* Chinese Excel UI → English Excel UI (students use English Excel) */
+const XL = {"Excel 啟用巨集的活頁簿":"Excel Macro-Enabled Workbook","以相對位置錄製":"Use Relative References","自訂功能區":"Customize Ribbon",
+  "選擇性貼上":"Paste Special","保護工作表":"Protect Sheet","儲存格格式":"Format Cells","新增工作表":"New Sheet","錄製巨集":"Record Macro",
+  "停止錄製":"Stop Recording","指定巨集":"Assign Macro","清除內容":"Clear Contents","開發人員":"Developer","版面配置":"Page Layout",
+  "填滿色彩":"Fill Color","另存新檔":"Save As","啟用內容":"Enable Content","第 2 列示範資料":"Row 2 sample data","此活頁簿":"This Workbook",
+  "常用":"Home","背景":"Background","白色":"White","欄寬":"Column Width","列高":"Row Height","淺綠":"Light Green","插入":"Insert",
+  "圖片":"Pictures","圖案":"Shapes","檢視":"View","格線":"Gridlines","檔案":"File","選項":"Options","轉置":"Transpose","清除":"Clear",
+  "保護":"Protection","鎖定":"Locked","校閱":"Review","右鍵":"Right-click","巨集":"Macros","刪除":"Delete","計數":"Count","值":"Values","確定":"OK"};
+const XL_KEYS = Object.keys(XL).sort((a,b)=>b.length-a.length);
+const toEn = t => XL_KEYS.reduce((s,k)=>s.split(k).join(XL[k]), t);
+// 「版面配置」 → 「版面配置 Page Layout」, only for exact menu names inside quotes
+const addEn = t => t.replace(/「([^」]+)」/g, (m,k)=> XL[k] ? `「${k} ${XL[k]}」` : m);
+function render(){
+  const s = STEPS[cur];
+  [...$("progress").children].forEach((el,i)=>el.className = i<cur ? "past" : i===cur ? "cur" : "");
+  $("stepno").innerHTML = `${cur+1}<small> ${UI[lang].step} ${STEPS.length}</small>`;
+  $("title").textContent = s.title[lang];
+  $("path").innerHTML = s.path.split("｜").map(p=>{ p=p.trim(); const e=toEn(p); return `<kbd>${e}${e!==p?`<small>${p}</small>`:""}</kbd>`; }).join("");
+  $("enui").innerHTML = `<small>English Excel</small>${s.path.split("｜").map(p=>toEn(p.trim())).join("　|　")}`;
+  $("thumbImg").src = s.thumb; $("thumbImg").alt = s.title[lang];
+  $("prev").disabled = cur===0;
+  $("jump").value = cur;
+  $("tips").innerHTML = s.tips.length ? `<h3>${UI[lang].tips}</h3>` + s.tips.map(t=>`<p class="${t.warn?"warn":""}">${lang==="yue"?addEn(t.yue):t.en}</p>`).join("") : "";
+  $("vwrap").classList.remove("zoom");
+}
+function updateNext(){
+  const last = cur===STEPS.length-1, ready = videoDone && voiceDone, b = $("next");
+  b.className = ready ? (last ? "finish" : "go") : "go wait";
+  b.textContent = ready ? (last ? UI[lang].finish : UI[lang].next) : UI[lang].playing;
+}
+function playStep(){
+  const my = ++token, s = STEPS[cur];
+  render(); videoDone = voiceDone = false; updateNext(); $("sub").textContent = "";
+  video.defaultPlaybackRate = speeds[speedIx]; video.src = s.clip; video.playbackRate = speeds[speedIx];
+  video.muted = $("origBtn").getAttribute("aria-pressed")!=="true";
+  video.play().catch(()=>{});
+  const lines = s.lines[lang]; let k = 0;
+  const speak = () => {
+    if(my!==token) return;
+    if(k>=lines.length){ $("sub").textContent=""; voiceDone = true; setMusicLevel(); finishCheck(); return; }
+    const ln = lines[k++];
+    $("sub").textContent = lang==="yue" ? addEn(ln.sub) : ln.sub;
+    voice.src = ln.audio; voice.playbackRate = speeds[speedIx]; voice.play().then(setMusicLevel).catch(()=>{ setTimeout(speak, ln.dur*1000); });
+    voice.onended = () => { setMusicLevel(); setTimeout(speak, 350); };
+  };
+  setTimeout(speak, 400);
+  // warm the next clip so jumping ahead starts quickly
+  const nx = STEPS[cur+1];
+  if(nx && !document.querySelector(`link[href="${nx.clip}"]`)) document.head.insertAdjacentHTML("beforeend", `<link rel="prefetch" href="${nx.clip}">`);
+}
+function finishCheck(){ updateNext(); }
+video.addEventListener("ended", ()=>{ videoDone = true; finishCheck(); });
+["waiting","loadstart"].forEach(ev=>video.addEventListener(ev, ()=>$("vwrap").classList.add("busy")));
+["playing","canplay","error"].forEach(ev=>video.addEventListener(ev, ()=>$("vwrap").classList.remove("busy")));
+function stopAll(){ token++; voice.pause(); voice.onended=null; video.pause(); setMusicLevel(); }
+function go(i){ stopAll(); cur = Math.max(0, Math.min(STEPS.length-1, i)); playStep(); }
+
+$("start").onclick = () => { startMusic(); $("intro").style.display="none"; $("lesson").classList.add("on"); go(0); };
+$("prev").onclick = () => go(cur-1);
+$("jump").onchange = e => { go(+e.target.value); e.target.blur(); };
+$("vwrap").onclick = e => {
+  const w = e.currentTarget, r = w.getBoundingClientRect();
+  video.style.transformOrigin = `${(e.clientX-r.left)/r.width*100}% ${(e.clientY-r.top)/r.height*100}%`;
+  w.classList.toggle("zoom");
+};
+$("replay").onclick = () => go(cur);
+$("next").onclick = () => {
+  if(cur===STEPS.length-1) return finish();
+  go(cur+1);
+};
+/* Full video: local file, chapters follow the step start times */
+const fullVideo = $("fullVideo");
+const fmt = t => `${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,"0")}`;
+function buildChapters(){
+  $("chapter").innerHTML = `<option value="">${UI[lang].chapter}</option>` +
+    STEPS.map(s=>`<option value="${s.start}">${fmt(s.start)}　${s.id}. ${s.title[lang]}</option>`).join("");
+}
+function openFull(){
+  stopAll(); buildChapters();
+  $("full").classList.add("on"); setMusicLevel();
+  const t = $("lesson").classList.contains("on") ? STEPS[cur].start : 0;
+  const seekPlay = () => { fullVideo.currentTime = t; fullVideo.play().catch(()=>{}); };
+  if(fullVideo.readyState >= 1) seekPlay(); else fullVideo.addEventListener("loadedmetadata", seekPlay, {once:true});
+}
+function closeFull(){ fullVideo.pause(); $("full").classList.remove("on"); setMusicLevel(); }
+$("fullBtn").onclick = openFull;
+$("fullIntro").onclick = openFull;
+$("fullClose").onclick = closeFull;
+$("chapter").onchange = e => { if(e.target.value!==""){ fullVideo.currentTime = +e.target.value; fullVideo.play().catch(()=>{}); } e.target.value=""; };
+$("again").onclick =() => { $("done").classList.remove("on"); $("lesson").classList.add("on"); go(0); };
+document.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{ lang=b.dataset.lang; applyLang(); });
+$("langBtn").onclick = () => { lang = lang==="en" ? "yue" : "en"; applyLang(); go(cur); };
+$("speedBtn").onclick = () => { speedIx=(speedIx+1)%speeds.length; video.defaultPlaybackRate=video.playbackRate=voice.playbackRate=speeds[speedIx]; $("speedBtn").textContent=speeds[speedIx]+"×"; };
+$("origBtn").onclick = e => { const on = e.currentTarget.getAttribute("aria-pressed")!=="true"; e.currentTarget.setAttribute("aria-pressed",on); video.muted=!on; };
+$("muteBtn").onclick = e => { musicOn = !musicOn; e.currentTarget.setAttribute("aria-pressed", !musicOn); e.currentTarget.style.textDecoration = musicOn?"":"line-through"; setMusicLevel(); };
+$("vol").oninput = () => { if(!musicOn){ musicOn=true; $("muteBtn").setAttribute("aria-pressed",false); $("muteBtn").style.textDecoration=""; } setMusicLevel(); };
+const toggleThumb = () => $("thumb").classList.toggle("big");
+$("thumb").onclick = toggleThumb;
+$("thumb").onkeydown = e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleThumb(); } };
+document.addEventListener("keydown", e=>{
+  if(e.key==="Escape" && $("full").classList.contains("on")) return closeFull();
+  if($("full").classList.contains("on") || !$("lesson").classList.contains("on") || e.target.tagName==="INPUT" || e.target.tagName==="SELECT") return;
+  if(e.key==="ArrowRight") $("next").click();
+  if(e.key==="ArrowLeft" && cur>0) go(cur-1);
+  if(e.key==="Escape") $("thumb").classList.remove("big");
+});
+
+/* ---------- Finish: confetti + generated fanfare ---------- */
+function finish(){
+  stopAll(); $("lesson").classList.remove("on"); $("done").classList.add("on");
+  [...$("progress").children].forEach(el=>el.className="past");
+  if(ac){ const t=ac.currentTime+0.05; [72,76,79,84].forEach((m,i)=>pluck(t+i*0.11,m,0.6,0.22,"square"));
+          pluck(t+0.5,84,1.2,0.18,"triangle"); pluck(t+0.5,88,1.2,0.14,"triangle"); }
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cv=$("fx"), cx=cv.getContext("2d"), W=cv.width=cv.clientWidth*devicePixelRatio, H=cv.height=cv.clientHeight*devicePixelRatio;
+  const cols=["#C8102E","#217346","#C6E0B4","#FFFFFF","#F2C14E"];
+  const ps=Array.from({length:220},()=>({x:W/2+(Math.random()-.5)*W*.1,y:H*.62,vx:(Math.random()-.5)*W*.022,vy:-Math.random()*H*.03-H*.01,
+    w:6+Math.random()*8,h:4+Math.random()*6,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[Math.random()*cols.length|0]}));
+  let f=0;(function tick(){ cx.clearRect(0,0,W,H);
+    ps.forEach(p=>{p.vy+=H*.0006;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;
+      cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.fillStyle=p.c;cx.fillRect(-p.w/2,-p.h/2,p.w*devicePixelRatio,p.h*devicePixelRatio);cx.restore();});
+    if(++f<260) requestAnimationFrame(tick); else cx.clearRect(0,0,W,H); })();
+}
+
+buildProgress(); applyLang();
+</script>
+</body>
+</html>
