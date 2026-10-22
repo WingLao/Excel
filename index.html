@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Excel 教學</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=Noto+Sans+HK:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--forest:#16302A;--forest-2:#1F3F36;--excel:#217346;--cell:#C6E0B4;--mist:#A9BDB4;--ink:#141414}
+*{box-sizing:border-box;margin:0}
+body{min-height:100vh;background:radial-gradient(120% 90% at 30% 10%,var(--forest-2),var(--forest));color:#fff;
+  font-family:"Figtree","Noto Sans HK","PingFang HK","Microsoft JhengHei",system-ui,sans-serif;padding:48px 16px}
+main{max-width:880px;margin:0 auto}
+header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+header img{width:56px;background:#fff;border-radius:8px;padding:6px}
+h1{font-size:28px;font-weight:800;letter-spacing:-.01em}
+h1 small{display:block;font-size:15px;font-weight:500;color:var(--mist);margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+a.card{display:block;text-decoration:none;color:var(--ink);background:#fff;border-radius:8px;overflow:hidden;transition:transform .15s,box-shadow .15s}
+a.card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+a.card img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#000}
+.body{padding:14px 16px 16px}
+.tag{display:inline-block;font-size:12px;font-weight:600;color:#fff;background:var(--excel);border-radius:99px;padding:2px 10px}
+.card h2{font-size:18px;margin:8px 0 4px}
+.card p{font-size:14px;color:#555;line-height:1.5}
+footer{margin-top:40px;font-size:13px;color:var(--mist)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="f5-score-login/assets/logo_202610211512.gif" alt="聖若瑟教區中學第五校校徽">
+    <h1>Excel 教學<small>聖若瑟教區中學第五校 · 資訊科技科</small></h1>
+  </header>
+  <div class="grid">
+    <a class="card" href="f5-score-login/">
+      <img src="f5-score-login/thumbs/step15_202610211512.jpg" alt="">
+      <div class="body">
+        <span class="tag">F5</span>
+        <h2>成績登入表格（巨集）</h2>
+        <p>Score login form with a macro · 16 steps · 廣東話 / English</p>
+      </div>
+    </a>
+  </div>
+  <footer>Wing Lao · CDSJ5 IT</footer>
+</main>
+</body>
+</html>
