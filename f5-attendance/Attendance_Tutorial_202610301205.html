@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Excel 員工出勤表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=Noto+Sans+HK:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --forest:#16302A; --forest-2:#1F3F36; --ink:#141414; --muted:#5B6660;
+  --excel:#217346; --cell:#C6E0B4; --mist:#A9BDB4; --line:#E3E8E5;
+  --holiday:#C00000; --weekend:#FCE4D6; --input:#FFC000;
+  --ot:#70AD47; --off:#FF0000; --leave:#ED7D31;
+  --font:"Figtree","Noto Sans HK","PingFang HK","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0}
+body{background:radial-gradient(120% 60% at 30% 0%,var(--forest-2),var(--forest) 60%) fixed,var(--forest);color:#fff;font-family:var(--font);line-height:1.6}
+a{color:var(--cell)}
+main{max-width:1080px;margin:0 auto;padding:36px 16px 64px}
+header.top{display:flex;align-items:center;gap:16px}
+header.top img{width:52px;background:#fff;border-radius:8px;padding:6px}
+header.top a{font-size:12.5px;color:var(--mist);text-decoration:none}
+h1{font-size:28px;font-weight:800;letter-spacing:-.01em;line-height:1.2;margin:20px 0 6px}
+h1 span{display:block;font-size:17.5px;font-weight:600;color:var(--mist);margin-top:4px}
+.sub{color:var(--mist);font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;margin:22px 0 24px}
+.dl{display:inline-flex;align-items:center;gap:10px;background:#fff;color:var(--ink);text-decoration:none;font-weight:700;padding:12px 20px;border-radius:99px}
+.dl:hover{background:var(--cell)}
+.dl svg{width:18px;height:18px}
+.progress{flex:1;min-width:200px;font-size:12.5px;color:var(--mist)}
+.progress .track{height:8px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin-top:6px}
+.progress .fill{height:100%;width:0;background:var(--cell);transition:width .3s}
+
+/* video + chapters */
+.watch{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start;margin-bottom:32px}
+.vbox{position:sticky;top:12px;z-index:2}
+.frame{position:relative;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;box-shadow:0 12px 36px rgba(0,0,0,.4)}
+.frame video{position:absolute;inset:0;width:100%;height:100%;background:#000}
+.enui{position:absolute;top:10px;right:10px;max-width:70%;font-size:12.5px;font-weight:700;background:var(--excel);color:#fff;padding:5px 10px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.4);pointer-events:none;line-height:1.35}
+.enui small{display:block;font-weight:500;opacity:.85;font-size:10.5px}
+.enui:empty{display:none}
+.now{margin-top:10px;font-size:12.5px;color:var(--mist);min-height:22px}
+.now b{color:#fff}
+.chapters{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px;max-height:min(70vh,560px);overflow:auto}
+.chapters h2{font-size:11.5px;font-weight:700;letter-spacing:.08em;color:var(--mist);padding:6px 8px 8px}
+.chapters button{display:grid;grid-template-columns:52px 1fr;gap:6px;width:100%;text-align:left;font:inherit;font-size:12.5px;color:#fff;background:none;border:0;border-radius:6px;padding:7px 8px;cursor:pointer;line-height:1.35}
+.chapters button:hover{background:rgba(255,255,255,.08)}
+.chapters button.on{background:rgba(198,224,180,.18);box-shadow:inset 3px 0 0 var(--cell)}
+.chapters button time{font-family:var(--mono);font-size:11px;color:var(--cell);padding-top:1px}
+.chapters .grp{font-size:10.5px;color:var(--mist);padding:10px 8px 2px;font-weight:600}
+
+/* steps */
+h3.part{font-size:12.5px;font-weight:700;letter-spacing:.08em;color:var(--mist);margin:36px 0 12px}
+section.card{background:#fff;color:var(--ink);border-radius:10px;padding:22px 24px;margin-bottom:14px;scroll-margin-top:16px}
+.card h2{font-size:17.5px;font-weight:800;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;letter-spacing:-.01em}
+.card h2 .no{font-size:13px;font-weight:800;color:#fff;background:var(--excel);border-radius:6px;padding:2px 9px}
+.card h2 small{font-size:12.5px;font-weight:500;color:var(--muted)}
+.play{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:700;color:var(--excel);background:#EEF4EF;border:1px solid #CFE3D4;border-radius:99px;padding:5px 12px;cursor:pointer}
+.play:hover{background:var(--cell)}
+.play svg{width:12px;height:12px}
+.card p,.card li{font-size:13.5px}
+.card p{margin-top:10px}
+.card ol,.card ul{margin-top:10px;padding-left:22px}
+.card li{margin-top:4px}
+.path{display:inline-block;font-size:12px;background:#EEF4EF;border:1px solid #D3E3D6;border-radius:6px;padding:1px 8px;color:#1E4D33;font-weight:600}
+.path small{font-weight:500;color:#5B7A66;margin-left:4px}
+.path b{font-weight:700}
+.en{font-weight:700;color:#1E4D33}
+.en small{font-weight:500;color:#5B7A66}
+code{font-family:var(--mono);font-size:.92em;background:#F1F3F2;border-radius:4px;padding:1px 5px}
+.f{display:flex;align-items:stretch;margin-top:12px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.f .cellref{flex:none;display:grid;place-items:center;min-width:64px;padding:0 10px;background:#F4F6F5;border-right:1px solid var(--line);font-weight:700;font-size:12.5px;color:var(--muted)}
+.f pre{flex:1;margin:0;padding:12px 14px;font-family:var(--mono);font-size:13px;overflow-x:auto;white-space:pre;color:#0F3D24}
+.f button{flex:none;border:0;border-left:1px solid var(--line);background:#fff;font:inherit;font-size:11.5px;font-weight:600;color:var(--excel);padding:0 14px;cursor:pointer}
+.f button:hover{background:#EEF4EF}
+.why{margin-top:12px;background:#F6F8F7;border-left:4px solid var(--excel);border-radius:4px;padding:10px 14px;font-size:13px}
+.warn{margin-top:12px;background:#FDF0EE;border-left:4px solid #C8102E;border-radius:4px;padding:10px 14px;font-size:13px}
+.warn b{color:#A00D25}
+.done{display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none}
+.done input{width:20px;height:20px;accent-color:var(--excel);cursor:pointer}
+section.card.is-done{box-shadow:inset 4px 0 0 var(--excel)}
+section.card.is-done .done{color:var(--excel)}
+table{border-collapse:collapse;font-size:12.5px}
+.scroll{overflow-x:auto;margin-top:12px;border:1px solid var(--line);border-radius:8px}
+.ref th,.ref td{border:1px solid var(--line);padding:6px 10px;text-align:left;white-space:nowrap}
+.ref th{background:#F4F6F5;font-weight:700}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid rgba(0,0,0,.15)}
+footer{margin-top:40px;font-size:11.5px;color:var(--mist)}
+@media (max-width:860px){
+  .watch{grid-template-columns:1fr}
+  .vbox{position:static}
+  .chapters{max-height:none}
+}
+@media (max-width:560px){
+  h1{font-size:23px}
+  section.card{padding:18px 16px}
+  .play{margin-left:0}
+  .f .cellref{min-width:48px;padding:0 6px}
+}
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <img src="../f5-score-login/assets/logo_202610211512.gif" alt="聖若瑟教區中學第五校校徽">
+    <a href="../">← Excel 教學 · 聖若瑟教區中學第五校</a>
+  </header>
+
+  <h1>員工出勤表<span>Employee Attendance Sheet</span></h1>
+  <p class="sub">按調節鈕改年份或月份，日期、星期、假期及週末顏色會自動更新。先看影片，再跟下面的步驟做。</p>
+
+  <div class="bar">
+    <a class="dl" href="ClassWork8_EmployeeAttendance_student_202610291107.xlsx" download>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      下載練習檔 Download (.xlsx)
+    </a>
+    <div class="progress" aria-live="polite"><span id="ptext">已完成 0 步</span><div class="track"><div class="fill" id="pfill"></div></div></div>
+  </div>
+
+  <div class="watch">
+    <div class="vbox">
+      <div class="frame"><video id="player" controls playsinline preload="metadata" poster="assets/poster_202610291129.jpg" controlslist="nodownload"></video><div class="enui" id="enui"></div></div>
+      <p class="now" id="now">影片共 16 段 · 按右邊章節或每一步的「▶」播放該段，播完自動接下一段。</p>
+    </div>
+    <nav class="chapters" id="chapters" aria-label="影片章節">
+      <h2>影片章節 CHAPTERS</h2>
+    </nav>
+  </div>
+
+  <section class="card" id="glossary">
+    <h2>中文版 ↔ 英文版 Excel 對照 <small>Menu names</small></h2>
+    <p>影片用中文版 Excel；你的電腦是<b>英文版</b>。找不到按鈕時，查這張表。每一步的路徑也是<b>英文在前</b>，灰色小字是影片中的中文名稱。</p>
+    <div class="scroll"><table class="ref"><tr><th>影片（中文版）</th><th>你的 Excel（English）</th></tr><tr><td>檔案 › 選項</td><td><b>File › Options</b></td></tr><tr><td>自訂功能區</td><td><b>Customize Ribbon</b></td></tr><tr><td>開發人員</td><td><b>Developer</b></td></tr><tr><td>插入 › 表單控制項</td><td><b>Insert › Form Controls</b></td></tr><tr><td>微調按鈕（數值調節鈕）</td><td><b>Spin Button</b></td></tr><tr><td>按鈕</td><td><b>Button</b></td></tr><tr><td>控制項格式</td><td><b>Format Control</b></td></tr><tr><td>最小值／最大值／遞增值</td><td><b>Minimum value / Maximum value / Incremental change</b></td></tr><tr><td>儲存格連結</td><td><b>Cell link</b></td></tr><tr><td>儲存格格式 › 數值 › 自訂</td><td><b>Format Cells › Number › Custom</b></td></tr><tr><td>常用</td><td><b>Home</b></td></tr><tr><td>設定格式化的條件</td><td><b>Conditional Formatting</b></td></tr><tr><td>新增規則／管理規則</td><td><b>New Rule / Manage Rules</b></td></tr><tr><td>使用公式來決定要格式化哪些儲存格</td><td><b>Use a formula to determine which cells to format</b></td></tr><tr><td>格式 › 填滿</td><td><b>Format… › Fill</b></td></tr><tr><td>資料 › 資料驗證</td><td><b>Data › Data Validation</b></td></tr><tr><td>儲存格內允許：清單</td><td><b>Allow: List</b></td></tr><tr><td>來源</td><td><b>Source</b></td></tr><tr><td>錄製巨集／停止錄製</td><td><b>Record Macro / Stop Recording</b></td></tr><tr><td>巨集名稱</td><td><b>Macro name</b></td></tr><tr><td>指定巨集</td><td><b>Assign Macro</b></td></tr><tr><td>另存新檔</td><td><b>Save As</b></td></tr><tr><td>Excel 啟用巨集的活頁簿</td><td><b>Excel Macro-Enabled Workbook (*.xlsm)</b></td></tr><tr><td>確定／取消</td><td><b>OK / Cancel</b></td></tr></table></div>
+  </section>
+
+  <h3 class="part">PART 1 · 熱身：Exercise 工作表</h3>
+
+  <section class="card" data-step data-t="0">
+    <h2><span class="no">1</span>WEEKDAY <small>日期是星期幾</small></h2>
+    <div class="f"><span class="cellref">C3</span><pre>=WEEKDAY(B3,2)</pre><button type="button">複製</button></div>
+    <p>第二個參數 Return_type：<code>1</code> → 星期日 = 1；<code>2</code> → 星期一 = 1 … 星期日 = 7。用 <code>2</code> 時 <b>&gt; 5 就是星期六、日</b>，第 11 步會用到。</p>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-step data-t="130">
+    <h2><span class="no">2</span>TEXT <small>把數值變成指定格式的文字</small></h2>
+    <p>在 C7 至 C11 輸入公式，結果要和 D 欄 ANS 一樣：</p>
+    <div class="scroll"><table class="ref">
+      <tr><th>格</th><th>公式</th><th>結果</th></tr>
+      <tr><td>C7</td><td><code>=TEXT(B7,"DDD")</code></td><td>Tue</td></tr>
+      <tr><td>C8</td><td><code>=TEXT(B8,"DDDD")</code></td><td>Tuesday</td></tr>
+      <tr><td>C9</td><td><code>=TEXT(B9,"MM/DD/YY")</code></td><td>09/28/21</td></tr>
+      <tr><td>C10</td><td><code>=TEXT(B10,"$###,###,###")</code></td><td>$12,345,678</td></tr>
+      <tr><td>C11</td><td><code>=TEXT(B11,"(##)####-####")</code></td><td>(12)3456-7898</td></tr>
+    </table></div>
+    <div class="warn"><b>注意：</b>影片中 B11 是 11 位數字，所以用 <code>(###)</code>。你的檔案 B11 是 10 位（1234567898），括號內只要 2 個 <code>#</code>。</div>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-step data-t="370">
+    <h2><span class="no">3</span>MATCH <small>找出位置</small></h2>
+    <div class="f"><span class="cellref">C22</span><pre>=MATCH(B22,C17:C20,0)</pre><button type="button">複製</button></div>
+    <p>40 在 C17:C20 的第 <b>3</b> 個位置。最後的 <code>0</code> = 完全相同；找不到會出現 <code>#N/A</code>。第 12 步用它找假期。</p>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-step data-t="455">
+    <h2><span class="no">4</span>IFERROR <small>出錯時顯示別的內容</small></h2>
+    <div class="f"><span class="cellref">C27</span><pre>=IFERROR(4/0,"Error")</pre><button type="button">複製</button></div>
+    <p><code>4/0</code> 會出現 <code>#DIV/0!</code>，用 IFERROR 改為顯示 Error。第 9 步會用它處理月尾的空白格。</p>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <h3 class="part">PART 2 · EmployeeAttendance Sheet</h3>
+
+  <section class="card" data-step data-t="492">
+    <h2><span class="no">5</span>先看完成品 <small>Finished sheet</small></h2>
+    <p>影片 8:12 起示範做好的出勤表：調節鈕改年／月、整欄假期深紅、週末淺橙、班別有顏色、Clear 按鈕一按清空。看完再開始做。</p>
+    <p>
+      <span class="sw" style="background:var(--holiday)"></span>公眾假期
+      <span class="sw" style="background:var(--weekend)"></span>週末
+      <span class="sw" style="background:var(--ot)"></span>overtime
+      <span class="sw" style="background:var(--off)"></span>day off
+      <span class="sw" style="background:var(--leave)"></span>各種 leave
+    </p>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-en="File › Options › Customize Ribbon › ✔ Developer" data-step data-t="640">
+    <h2><span class="no">6</span>開啟「開發人員」索引標籤 <small>Developer tab</small></h2>
+    <ol>
+      <li><span class="path"><b>File › Options › Customize Ribbon</b> <small>影片：檔案 › 選項 › 自訂功能區</small></span></li>
+      <li>右邊 <span class="en">Main Tabs</span> 清單勾選 <span class="en">Developer <small>（影片：開發人員）</small></span> → <b>OK</b>。</li>
+      <li>Mac 版：<span class="path"><b>Excel › Preferences › Ribbon &amp; Toolbar</b></span>，勾選 Developer。</li>
+    </ol>
+    <p>上方會多了「開發人員」，之後的調節鈕和巨集都在這裏。</p>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-en="Developer › Insert › Form Controls › Spin Button" data-step data-t="680">
+    <h2><span class="no">7</span>年份及月份調節鈕 <small>Spin button</small></h2>
+    <ol>
+      <li>C1 輸入 <b>2026</b>，I1 輸入 <b>1</b>。</li>
+      <li><span class="path"><b>Developer › Insert › Form Controls › Spin Button</b> <small>影片：開發人員 › 插入 › 表單控制項 › 微調按鈕</small></span>，在 D1 畫一個。</li>
+      <li><b>Right-click</b>（右鍵）→ <span class="path"><b>Format Control › Control</b> <small>影片：控制項格式 › 控制</small></span>：</li>
+    </ol>
+    <div class="scroll"><table class="ref">
+      <tr><th></th><th>Minimum value<br><small>最小值</small></th><th>Maximum value<br><small>最大值</small></th><th>Incremental change<br><small>遞增值</small></th><th>Cell link<br><small>儲存格連結</small></th></tr>
+      <tr><td>年份（D1 旁）</td><td>2025</td><td>2030</td><td>1</td><td><code>$C$1</code></td></tr>
+      <tr><td>月份（J1 旁）</td><td>1</td><td>12</td><td>1</td><td><code>$I$1</code></td></tr>
+    </table></div>
+    <p>按上下箭咀，C1／I1 的數字會改變。</p>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-en="Right-click › Format Cells › Number › Custom" data-step data-t="765">
+    <h2><span class="no">8</span>每月第一日 <small>DATE</small></h2>
+    <div class="f"><span class="cellref">C3</span><pre>=DATE(C1,I1,1)</pre><button type="button">複製</button></div>
+    <p>只顯示「日」：<b>Right-click</b>（右鍵）→ <span class="path"><b>Format Cells › Number › Custom</b> <small>影片：儲存格格式 › 數值 › 自訂</small></span>，<span class="en">Type <small>（類型）</small></span> 輸入 <code>d</code> → <b>OK</b>。</p>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-step data-t="815">
+    <h2><span class="no">9</span>第 2 日至第 31 日 <small>IFERROR + IF + MONTH</small></h2>
+    <p>影片先試 <code>=C3+1</code>，再把月份改成 2 月，發現 3 月 1、2、3 日都跑了出來，所以改為：</p>
+    <div class="f"><span class="cellref">D3</span><pre>=IFERROR(IF(MONTH(C3+1)=$I$1,C3+1,""),"")</pre><button type="button">複製</button></div>
+    <p>D3 向右拖曳到 <code>AG3</code>，再設格式 <code>d</code>。</p>
+    <div class="why"><b>IF</b>：下一日仍是同一個月才顯示，否則留空。<b>IFERROR</b>：前一格已是空白時，<code>""+1</code> 會出錯，改為留空。<code>$I$1</code> 要加 <code>$</code>，拖曳時才不會移位。</div>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-step data-t="970">
+    <h2><span class="no">10</span>星期 <small>TEXT</small></h2>
+    <div class="f"><span class="cellref">C4</span><pre>=TEXT(C3,"DDD")</pre><button type="button">複製</button></div>
+    <p>C4 向右拖曳到 <code>AG4</code>。按調節鈕換月份，星期會跟着改。</p>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-en="Home › Conditional Formatting › New Rule" data-step data-t="1025">
+    <h2><span class="no">11</span>週末標色 <small>Conditional Formatting + WEEKDAY</small></h2>
+    <ol>
+      <li>選取 <code>C3:AG30</code>（由 C3 開始選）。</li>
+      <li><span class="path"><b>Home › Conditional Formatting › New Rule</b> <small>影片：常用 › 設定格式化的條件 › 新增規則</small></span></li>
+      <li>選 <span class="en">Use a formula to determine which cells to format <small>（影片：使用公式來決定要格式化哪些儲存格）</small></span>，在 <span class="en">Format values where this formula is true</span> 輸入：</li>
+    </ol>
+    <div class="f"><span class="cellref">規則</span><pre>=WEEKDAY(C$3,2)&gt;5</pre><button type="button">複製</button></div>
+    <p><b>Format…</b> › <b>Fill</b> → 淺橙色 → <b>OK</b> → <b>OK</b>。<small style="color:#5B6660">（影片：格式 › 填滿 › 確定）</small></p>
+    <div class="why"><code>C$3</code>：鎖第 3 列、不鎖欄。每一格都看<b>自己那一欄的日期</b>，所以整欄一起變色。</div>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-en="Home › Conditional Formatting › New Rule" data-step data-t="1105">
+    <h2><span class="no">12</span>公眾假期標色 <small>Conditional Formatting + MATCH</small></h2>
+    <p>先到 <b>Table</b> 工作表看看：D 欄是 2026 年澳門公眾假期日期（D2:D29）。回到出勤表，同樣選取 <code>C3:AG30</code>，新增規則：</p>
+    <div class="f"><span class="cellref">規則</span><pre>=MATCH(C$3,Table!$D$2:$D$29,0)&gt;0</pre><button type="button">複製</button></div>
+    <p><b>Format…</b> › <b>Fill</b> → 深紅色 → <b>OK</b> → <b>OK</b>。按調節鈕到 <b>1 月</b>：1 日元旦整欄變紅。</p>
+    <div class="warn"><b>注意：</b>影片用 2021 年的表（<code>$D$1:$D$20</code>）。你的檔案假期在 <code>$D$2:$D$29</code>，範圍要改。</div>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-en="Data › Data Validation › Allow: List" data-step data-t="1196">
+    <h2><span class="no">13</span>班別下拉清單 <small>Data Validation</small></h2>
+    <ol>
+      <li>選取 <code>C6:AG30</code>。</li>
+      <li><span class="path"><b>Data › Data Validation</b> <small>影片：資料 › 資料驗證</small></span> → <span class="en">Settings › Allow: List <small>（影片：儲存格內允許：清單）</small></span>。</li>
+      <li><span class="en">Source <small>（來源）</small></span> 輸入（或到 Table 工作表選 A2:A9）→ <b>OK</b>：</li>
+    </ol>
+    <div class="f"><span class="cellref">來源</span><pre>=Table!$A$2:$A$9</pre><button type="button">複製</button></div>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-en="Home › Conditional Formatting › New Rule" data-step data-t="1258">
+    <h2><span class="no">14</span>班別顏色 <small>3 條規則</small></h2>
+    <p>選取 <code>C6:AG30</code> → <b>Home › Conditional Formatting › New Rule › Use a formula…</b>，新增 3 條規則，每條按 <b>Format… › Fill</b> 選顏色：</p>
+    <div class="f"><span class="cellref"><span class="sw" style="background:var(--ot);margin:0"></span></span><pre>=C6="overtime"</pre><button type="button">複製</button></div>
+    <div class="f"><span class="cellref"><span class="sw" style="background:var(--off);margin:0"></span></span><pre>=C6="day off"</pre><button type="button">複製</button></div>
+    <div class="f"><span class="cellref"><span class="sw" style="background:var(--leave);margin:0"></span></span><pre>=RIGHT(C6,5)="leave"</pre><button type="button">複製</button></div>
+    <div class="why"><code>RIGHT(C6,5)</code> 取最後 5 個字：sick leave、personal leave、official leave 都以 <b>leave</b> 結尾，一條規則就夠。</div>
+    <div class="warn"><b>常見錯誤：</b>在對話框用滑鼠點 C6，Excel 會自動變成 <code>$C$6</code>（影片 21:20），要刪去 <code>$</code> 改回 <code>C6</code>，否則整片只看 C6 一格，顏色全錯。</div>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-en="Developer › Record Macro · Insert › Button" data-step data-t="1460">
+    <h2><span class="no">15</span>Clear 按鈕 <small>錄製巨集 Macro</small></h2>
+    <ol>
+      <li><span class="path"><b>Developer › Record Macro</b> <small>影片：開發人員 › 錄製巨集</small></span>，<span class="en">Macro name <small>（巨集名稱）</small></span> 輸入 <code>clear</code> → <b>OK</b>。</li>
+      <li>選取 <code>C6:AG30</code> → 按 <b>Delete</b>。</li>
+      <li><span class="path"><b>Developer › Stop Recording</b> <small>影片：開發人員 › 停止錄製</small></span>。</li>
+      <li><span class="path"><b>Developer › Insert › Form Controls › Button</b> <small>影片：開發人員 › 插入 › 表單控制項 › 按鈕</small></span>，在 K1:L1 畫一個 → <span class="en">Assign Macro <small>（指定巨集）</small></span> 選 <code>clear</code> → <b>OK</b> → <b>Right-click › Edit Text</b> 改為 <b>Clear</b>。</li>
+    </ol>
+    <p>隨便選幾個班別，按 Clear 測試。</p>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <section class="card" data-en="File › Save As › Excel Macro-Enabled Workbook" data-step data-t="1560">
+    <h2><span class="no">16</span>儲存及提交 <small>Save as .xlsm</small></h2>
+    <ol>
+      <li><span class="path"><b>File › Save As</b> <small>影片：檔案 › 另存新檔</small></span></li>
+      <li><span class="en">Save as type: Excel Macro-Enabled Workbook (*.xlsm) <small>（影片：存檔類型：Excel 啟用巨集的活頁簿）</small></span></li>
+      <li>檔名：<code>Class_Number_Name.xlsm</code>（例如 <code>F5A_05_ChanTaiMan.xlsm</code>）</li>
+    </ol>
+    <div class="warn"><b>注意：</b>存成 .xlsx 巨集會被刪除，Clear 按鈕便不能用。</div>
+    <label class="done"><input type="checkbox"> 完成 Done</label>
+  </section>
+
+  <footer>Wing Lao · CDSJ5 IT</footer>
+</main>
+<script>
+(function(){
+  var STAMP='202610291129';
+  var steps=[].slice.call(document.querySelectorAll('[data-step]'));
+  var groups={0:'Exercise 熱身',4:'出勤表'};
+  var fmt=function(s){return Math.floor(s/60)+':'+('0'+s%60).slice(-2)};
+
+  // chapter list + play buttons
+  var nav=document.getElementById('chapters');
+  steps.forEach(function(s,i){
+    var t=+s.dataset.t, title=s.querySelector('h2').childNodes[1].textContent.trim();
+    if(groups[i]){var g=document.createElement('div');g.className='grp';g.textContent=groups[i];nav.appendChild(g)}
+    var b=document.createElement('button');b.type='button';
+    b.innerHTML='<time>'+fmt(t)+'</time><span>'+(i+1)+'. '+title+'</span>';
+    b.addEventListener('click',function(){play(i)});nav.appendChild(b);s._chap=b;
+    var p=document.createElement('button');p.type='button';p.className='play';
+    p.innerHTML='<svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z" fill="currentColor"/></svg>影片 '+fmt(t);
+    p.addEventListener('click',function(){play(i);document.querySelector('.vbox').scrollIntoView({behavior:'smooth',block:'start'})});
+    s.querySelector('h2').appendChild(p);
+  });
+
+  // self-hosted clips, one per step
+  var video=document.getElementById('player'),cur=-1;
+  function src(i){return 'clips/step'+('0'+(i+1)).slice(-2)+'_'+STAMP+'.mp4'}
+  function load(i){
+    cur=i;video.src=src(i);
+    var en=steps[i].dataset.en;document.getElementById('enui').innerHTML=en?'<small>英文版 Excel</small>'+en:'';
+    steps.forEach(function(st,k){st._chap.classList.toggle('on',k===i)});
+    document.getElementById('now').innerHTML='正在播放：<b>'+(i+1)+'. '+steps[i].querySelector('h2').childNodes[1].textContent.trim()+'</b>（影片 '+fmt(+steps[i].dataset.t)+'）';
+  }
+  function play(i){load(i);video.play().catch(function(){})}
+  video.addEventListener('ended',function(){if(cur<steps.length-1)play(cur+1)});
+  load(0);
+
+  // progress (per-viewer, browser only)
+  var KEY='attendance-done';
+  var saved=[];try{saved=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
+  function update(){
+    var n=0,state=[];
+    steps.forEach(function(st,i){var on=st.querySelector('.done input').checked;st.classList.toggle('is-done',on);state[i]=on;if(on)n++});
+    document.getElementById('ptext').textContent='已完成 '+n+' / '+steps.length+' 步';
+    document.getElementById('pfill').style.width=(n/steps.length*100)+'%';
+    try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}
+  }
+  steps.forEach(function(st,i){var b=st.querySelector('.done input');b.checked=!!saved[i];b.addEventListener('change',update)});
+  update();
+
+  // copy buttons
+  document.querySelectorAll('.f button').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var t=btn.parentNode.querySelector('pre').textContent;
+      if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){btn.textContent='已複製';setTimeout(function(){btn.textContent='複製'},1200)},function(){})}
+    });
+  });
+})();
+</script>
+</body>
+</html>
